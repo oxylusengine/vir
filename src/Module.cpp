@@ -857,10 +857,6 @@ auto Module::copy_acceleration_structure(
   );
 }
 
-auto Module::begin_rendering(this Module& self, std::initializer_list<ResourceAccess> attachments) -> Module& {
-  return self.begin_rendering(std::span(attachments.begin(), attachments.size()));
-}
-
 auto Module::begin_rendering(this Module& self, std::span<const ResourceAccess> attachments) -> Module& {
   VIR_ASSERT(!attachments.empty(), "a rendering pass must declare at least one resource");
   auto resources = std::vector<ValueID>{};
@@ -871,17 +867,6 @@ auto Module::begin_rendering(this Module& self, std::span<const ResourceAccess> 
   auto lowered = self.lower_attachments(attachments);
   const auto id = self.emit(ir::BeginRendering{.attachments = std::move(lowered)});
   return self.open_pass(PassKind::Rendering, id, std::move(resources));
-}
-
-auto Module::begin_rendering_area(
-  this Module& self,
-  std::initializer_list<ResourceAccess> attachments,
-  Extent2D render_area,
-  u32 layer_count,
-  u32 view_mask
-) -> Module& {
-  return self
-    .begin_rendering_area(std::span(attachments.begin(), attachments.size()), render_area, layer_count, view_mask);
 }
 
 auto Module::begin_rendering_area(
@@ -904,10 +889,6 @@ auto Module::begin_rendering_area(
     }
   );
   return self.open_pass(PassKind::Rendering, id, std::move(resources));
-}
-
-auto Module::begin_compute(this Module& self, std::initializer_list<ResourceAccess> attachments) -> Module& {
-  return self.begin_compute(std::span(attachments.begin(), attachments.size()));
 }
 
 auto Module::begin_compute(this Module& self, std::span<const ResourceAccess> attachments) -> Module& {

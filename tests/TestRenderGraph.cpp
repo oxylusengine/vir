@@ -68,7 +68,7 @@ TEST(RenderGraphModule, AnOpaqueBodyIsCompiledWithTheStateInForceWhereItIsCalled
                      .set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
                      .broadcast_color_blend(BlendPreset::AlphaBlend)
                      .record_from(body)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
 
   const auto compiled = compile(module, end);
   const auto calls = find_all<ir::CallOpaque>(compiled);
@@ -88,7 +88,7 @@ TEST(RenderGraphModule, ARegionWithAnOpaqueBodyStillBarriersWhatItDeclared) {
   const auto drawn = module.begin_rendering({{swapchain, Access::ColorRW}, {cleared, Access::FragmentSampled}})
                        .bind_graphics_pipeline(pipeline(0))
                        .record_from(body)
-                       .end_rendering<2>()[0];
+                       .end_rendering()[0];
   const auto end = module.export_to(drawn, Access::FragmentSampled);
 
   const auto compiled = compile(module, end);
@@ -114,7 +114,7 @@ TEST(RenderGraphModule, TheBodyOfAnOpaquePassIsAVariableOfTheProgram) {
   const auto end = module.begin_rendering({{target, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(0))
                      .record_from(body)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
 
   auto compiled = compile(module, end);
   EXPECT_TRUE(compiled.has_variable(body));
@@ -132,7 +132,7 @@ TEST(RenderGraphModule, ATransientImageIsCreatedWithTheUsageTheGraphImplies) {
   const auto rendered = module.begin_rendering({{target, Access::ColorRW}})
                           .bind_graphics_pipeline(pipeline(0))
                           .draw(3_u32, 1_u32)
-                          .end_rendering<1>()[0];
+                          .end_rendering()[0];
   const auto blitted = module.blit(rendered, swapchain);
   const auto end = module.export_to(blitted, Access::FragmentSampled);
 
@@ -194,15 +194,15 @@ TEST(RenderGraphModule, AReadFromANewStageAtTheSameLayoutStillWaits) {
   const auto drawn = module.begin_rendering({{target, Access::ColorRW}})
                        .bind_graphics_pipeline(pipeline(0))
                        .draw(3_u32, 1_u32)
-                       .end_rendering<1>()[0];
+                       .end_rendering()[0];
   const auto sampled = module.begin_rendering({{other, Access::ColorRW}, {drawn, Access::FragmentSampled}})
                          .bind_graphics_pipeline(pipeline(0))
                          .draw(3_u32, 1_u32)
-                         .end_rendering<2>()[1];
+                         .end_rendering()[1];
   const auto read = module.begin_compute({{sampled, Access::ComputeSampled}})
                       .bind_compute_pipeline(pipeline(1))
                       .dispatch(1_u32, 1_u32, 1_u32)
-                      .end_compute<1>()[0];
+                      .end_compute()[0];
   const auto end = module.export_to(read, Access::ComputeSampled);
 
   const auto compiled = compile(module, end);
@@ -236,7 +236,7 @@ TEST(RenderGraphModule, ExportingAnImportedBufferAfterAWriteEmitsAMemoryBarrier)
   const auto written = module.begin_compute({{buffer, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto exported = module.export_to(written, Access::HostRead);
 
   const auto compiled = compile(module, exported);
@@ -294,7 +294,7 @@ TEST(RenderGraphModule, BindingAVertexBufferMakesTheHostWriteVisibleToVertexInpu
                      .bind_graphics_pipeline(pipeline(0))
                      .bind_vertex_buffer(0, buffer)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
 
   const auto compiled = compile(module, end);
   const auto expected = std::vector<std::pair<Access, Access>>{{Access::HostWrite, Access::AttributeRead}};
@@ -316,12 +316,12 @@ TEST(RenderGraphModule, ATransientBufferIsCreatedWithTheUsageTheGraphImplies) {
                          .bind_compute_pipeline(pipeline(0))
                          .push_constant_address(0, scratch)
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.begin_rendering({{attachment, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(0))
                      .bind_vertex_buffer(0, written)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
 
   const auto usage = buffer_usage(compile(module, end), scratch);
   EXPECT_TRUE(usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -335,7 +335,7 @@ TEST(RenderGraphModule, TheFirstWriteToATransientBufferWaitsOnNothing) {
   const auto written = module.begin_compute({{scratch, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.export_to(written, Access::ComputeRead);
   const auto expected = std::vector<std::pair<Access, Access>>{{Access::ComputeWrite, Access::ComputeRead}};
   EXPECT_EQ(memory_barriers(module, compile(module, end)), expected);
@@ -347,7 +347,7 @@ TEST(RenderGraphModule, ABoundBufferWaitsAtTheAccessItWasDeclaredToRestAt) {
   const auto written = module.begin_compute({{bound, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.export_to(written, Access::ComputeRead);
 
   const auto expected = std::vector<std::pair<Access, Access>>{
@@ -365,7 +365,7 @@ TEST(RenderGraphModule, ABoundImageRestsAtItsDeclaredAccessAndLayout) {
   const auto written = module.begin_compute({{history, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.export_to(written, Access::FragmentSampled);
 
   const auto compiled = compile(module, end);
@@ -384,7 +384,7 @@ TEST(RenderGraphModule, BindingTheWrongKindToAResourceSlotIsRejected) {
   const auto written = module.begin_compute({{bound, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   auto compiled = compile(module, written);
   EXPECT_EQ(kind_of(Value(Buffer{}))->tag, ir::VariableKindTag::Buffer);
   compiled.set(bound, Buffer{});
@@ -398,7 +398,7 @@ TEST(RenderGraphModule, BuffersWaitingOnTheSamePairShareOneBarrier) {
   const auto read = module.begin_compute({{first, Access::ComputeRead}, {second, Access::ComputeRead}})
                       .bind_compute_pipeline(pipeline(0))
                       .dispatch(1_u32, 1_u32, 1_u32)
-                      .end_compute<2>()[0];
+                      .end_compute()[0];
   const auto expected = std::vector<std::pair<Access, Access>>{{Access::HostWrite, Access::ComputeRead}};
   EXPECT_EQ(memory_barriers(module, compile(module, read)), expected);
 }
@@ -413,11 +413,11 @@ TEST(RenderGraphModule, ADispatchAndADrawCanReadTheirCountsFromVariables) {
   const auto written = module.begin_compute({{scratch, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(groups, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.begin_rendering({{attachment, Access::ColorRW}, {written, Access::VertexRead}})
                      .bind_graphics_pipeline(pipeline(1))
                      .draw(vertices, 1_u32)
-                     .end_rendering<2>()[0];
+                     .end_rendering()[0];
 
   const auto compiled = compile(module, end);
   ASSERT_EQ(find_all<ir::Dispatch>(compiled).size(), 1u);
@@ -434,7 +434,7 @@ TEST(RenderGraphModule, ARegionOpenedWithDepthInfersTheDepthFormat) {
                      .bind_graphics_pipeline(pipeline(0))
                      .set_depth(DepthState::less())
                      .draw(3_u32, 1_u32)
-                     .end_rendering<2>()[0];
+                     .end_rendering()[0];
 
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
@@ -455,7 +455,7 @@ TEST(RenderGraphModule, DepthStateWithoutADepthAttachmentIsDropped) {
                      .bind_graphics_pipeline(pipeline(0))
                      .set_depth(DepthState::less())
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
   ASSERT_EQ(draws.size(), 1u);
@@ -470,7 +470,7 @@ TEST(RenderGraphModule, AStateChangeBetweenDrawsSplitsThemIntoTwoPermutations) {
                      .draw(3_u32, 1_u32)
                      .set_primitive_topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
   ASSERT_EQ(draws.size(), 2u);
@@ -485,7 +485,7 @@ TEST(RenderGraphModule, DrawsThatAgreeOnStateShareOnePermutation) {
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
                      .draw(6_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
   ASSERT_EQ(draws.size(), 2u);
@@ -501,7 +501,7 @@ TEST(RenderGraphModule, PushConstantsReachTheDrawsThatFollowThem) {
                      .draw(3_u32, 1_u32)
                      .push_constants(42_u32)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
   ASSERT_EQ(draws.size(), 2u);
@@ -518,7 +518,7 @@ TEST(RenderGraphModule, PushConstantsFromAVariableReachTheDrawAsAVariable) {
                      .bind_graphics_pipeline(pipeline(0))
                      .push_constants_from(push)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
   ASSERT_EQ(draws.size(), 1u);
@@ -543,7 +543,7 @@ TEST(RenderGraphModule, ADispatchPicksUpTheComputePipelineAndTheConstantsInForce
                      .bind_compute_pipeline(pipeline(7))
                      .specialize_constant(1, 5_u32)
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   const auto dispatches = find_all<ir::Dispatch>(compiled);
   ASSERT_EQ(dispatches.size(), 1u);
@@ -558,7 +558,7 @@ TEST(RenderGraphModule, ADispatchPerPixelCoversTheImageItWasSizedFrom) {
   const auto end = module.begin_compute({{image, Access::ComputeWrite}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch_invocations_per_pixel(image)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   const auto dispatches = find_all<ir::Dispatch>(compiled);
   ASSERT_EQ(dispatches.size(), 1u);
@@ -573,11 +573,11 @@ TEST(RenderGraphModule, AnIndirectDispatchWaitsForTheBufferOfCounts) {
   const auto written = module.begin_compute({{counts, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.begin_compute({{written, Access::IndirectRead}})
                      .bind_compute_pipeline(pipeline(1))
                      .dispatch_indirect(written)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   const auto barriers = memory_barriers(module, compiled);
   EXPECT_TRUE(std::ranges::find(barriers, std::pair{Access::ComputeWrite, Access::IndirectRead}) != barriers.end())
@@ -592,11 +592,11 @@ TEST(RenderGraphModule, AnIndirectDrawWaitsForTheDispatchThatFilledIt) {
   const auto written = module.begin_compute({{commands, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.begin_rendering({{attachment, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(1))
                      .draw_indirect(written, 4_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto barriers = memory_barriers(module, compiled);
   EXPECT_TRUE(std::ranges::find(barriers, std::pair{Access::ComputeWrite, Access::IndirectRead}) != barriers.end())
@@ -614,12 +614,12 @@ TEST(RenderGraphModule, MeshTaskDrawsInheritThePipelineAndWaitOnTheirCommands) {
                                                     )
                                                     .bind_compute_pipeline(pipeline(0))
                                                     .dispatch(1_u32, 1_u32, 1_u32)
-                                                    .end_compute<2>();
+                                                    .end_compute();
   const auto end = module.begin_rendering({{attachment, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(2))
                      .draw_mesh_tasks(1_u32, 1_u32, 1_u32)
                      .draw_mesh_tasks_indirect_count(written_commands, 0, written_counts, 0, 16_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   ASSERT_EQ(find_all<ir::DrawMeshTasks>(compiled).size(), 1u);
   ASSERT_EQ(find_all<ir::DrawMeshTasksIndirect>(compiled).size(), 1u);
@@ -636,7 +636,7 @@ TEST(RenderGraphModule, TracedRaysTakeTheRayTracingPipelineAndItsPushes) {
                      .bind_ray_tracing_pipeline(pipeline(4))
                      .push_constants(7_u32)
                      .trace_rays(WIDTH, HEIGHT, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   const auto traces = find_all<ir::TraceRays>(compiled);
   ASSERT_EQ(traces.size(), 1u);
@@ -654,7 +654,7 @@ TEST(RenderGraphModule, ADispatchThatWritesAnImagePutsItInGeneralWithStorageUsag
   const auto end = module.begin_compute({{image, Access::ComputeWrite}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   const auto barriers = image_barriers(module, compiled);
   ASSERT_EQ(barriers.size(), 1u);
@@ -669,7 +669,7 @@ TEST(RenderGraphModule, EveryDeclaredResourceGetsAFreshResultAfterThePass) {
   const auto [a, b] = module.begin_compute({{first, Access::ComputeWrite}, {second, Access::ComputeRead}})
                         .bind_compute_pipeline(pipeline(0))
                         .dispatch(1_u32, 1_u32, 1_u32)
-                        .end_compute<2>();
+                        .end_compute();
   EXPECT_NE(a, first);
   EXPECT_NE(b, second);
   EXPECT_EQ(module.resource_root(a), first);
@@ -713,7 +713,7 @@ TEST(RenderGraphModule, AReadbackPutsTheImageInTheTransferSourceLayoutAndTheBuff
   const auto drawn = module.begin_rendering({{target, Access::ColorRW}})
                        .bind_graphics_pipeline(pipeline(0))
                        .draw(3_u32, 1_u32)
-                       .end_rendering<1>()[0];
+                       .end_rendering()[0];
   const auto readback = module.import_buffer(Buffer{.size = 64}, Access::None);
   const auto copied = module.copy_image_to_buffer(drawn, readback);
   const auto end = module.export_to(copied, Access::HostRead, DomainFlag::Host);
@@ -738,7 +738,7 @@ TEST(RenderGraphModule, BufferCopiesAndFillsAreOrderedAgainstTheirReaders) {
   const auto end = module.begin_compute({{copied, Access::ComputeRead}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
 
   const auto compiled = compile(module, end);
   const auto memory = memory_barriers(module, compiled);
@@ -769,7 +769,7 @@ TEST(RenderGraphModule, PerMipPassesBarrierOnlyTheMipsTheyTouch) {
     current = module.begin_compute({{src, Access::ComputeSampled}, {dst, Access::ComputeWrite}})
                 .bind_compute_pipeline(pipeline(0))
                 .dispatch(1_u32, 1_u32, 1_u32)
-                .end_compute<2>()[1];
+                .end_compute()[1];
   }
 
   const auto end = module.export_to(module.whole(current), Access::FragmentSampled);
@@ -836,7 +836,7 @@ TEST(RenderGraphModule, AKeptPassIsCompiledWithoutARootReachingIt) {
   const auto written = module.begin_compute({{scratch, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   module.keep(written);
   const auto end = module.clear(image, clear::BLACK);
   const auto compiled = compile(module, end);
@@ -850,7 +850,7 @@ TEST(RenderGraphModule, ASampledImageReachesTheShaderReadLayoutBeforeTheRegionOp
   const auto end = module.begin_rendering({{attachment, Access::ColorRW}, {texture, Access::FragmentSampled}})
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<2>()[0];
+                     .end_rendering()[0];
 
   const auto compiled = compile(module, end);
   const auto barriers = image_barriers(module, compiled);
@@ -877,7 +877,7 @@ TEST(RenderGraphModule, AWrittenDescriptorIsTransitionedBeforeItsRegionOpensAndR
                      .bind_graphics_pipeline(pipeline(0))
                      .bind_texture(0, 1, texture, a_sampler())
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
 
   const auto declared = Declared::fragment({{0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}});
   const auto compiled = module.compile(declared.pipelines(), end);
@@ -903,7 +903,7 @@ TEST(RenderGraphModule, AStorageDescriptorLandsInGeneralWithStorageUsage) {
                      .bind_graphics_pipeline(pipeline(0))
                      .bind_image(0, 0, image)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
 
   const auto declared = Declared::with_access(
     {{0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE}},
@@ -927,7 +927,7 @@ TEST(RenderGraphModule, ADescriptorAndAnAttachmentOverTheSameImageTransitionOnce
                      .bind_compute_pipeline(pipeline(0))
                      .bind_image(0, 0, image)
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
 
   const auto declared = Declared::with_access(
     {{0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE}},
@@ -947,7 +947,7 @@ TEST(RenderGraphModule, ADescriptorWrittenWithoutAPipelineThatReadsItIsRejected)
   const auto end = module.begin_rendering({{attachment, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
 
   const auto declared = Declared::fragment({{0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE}});
   EXPECT_FALSE(module.compile(declared.pipelines(), end).has_value());
@@ -961,7 +961,7 @@ TEST(RenderGraphModule, BlendStateIsPerAttachmentAndKeysThePipeline) {
                      .bind_graphics_pipeline(pipeline(0))
                      .set_color_blend(1, BlendPreset::Additive)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<2>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
   ASSERT_EQ(draws.size(), 1u);
@@ -976,7 +976,7 @@ TEST(RenderGraphModule, AnAttachmentlessPassTakesTheAreaAndLayersItNames) {
   const auto end = module.begin_rendering_area({{pages, Access::FragmentWrite}}, {128, 128}, 4)
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto begins = find_all<ir::BeginRendering>(compiled);
   ASSERT_EQ(begins.size(), 1u);
@@ -993,7 +993,7 @@ TEST(RenderGraphModule, AClearOnlyRenderedIntoBecomesTheLoadOp) {
   const auto end = module.begin_rendering({{cleared, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   EXPECT_TRUE(find_all<ir::Clear>(compiled).empty()) << compiled.dump();
   const auto begins = find_all<ir::BeginRendering>(compiled);
@@ -1091,7 +1091,7 @@ TEST(RenderGraphSelection, AnArmThatNeverReachedABufferWaitsOnNothingAtTheJoin) 
       return m.begin_compute({{target, Access::ComputeWrite}, {buffer, Access::ComputeRead}})
         .bind_compute_pipeline(pipeline(0))
         .dispatch(1_u32, 1_u32, 1_u32)
-        .end_compute<2>()[0];
+        .end_compute()[0];
     },
     [&](Module&) { return target; }
   );
@@ -1111,7 +1111,7 @@ TEST(RenderGraphSelection, ConditionalsMergePassResultArraysPositionByPosition) 
       return m.begin_compute({{first, Access::ComputeWrite}, {second, Access::ComputeWrite}})
         .bind_compute_pipeline(pipeline(0))
         .dispatch(1_u32, 1_u32, 1_u32)
-        .end_compute<2>();
+        .end_compute();
     },
     [&](Module&) { return std::array{first, second}; }
   );
@@ -1126,7 +1126,7 @@ TEST(RenderGraphProgram, SettingAVariableLeavesTheCompiledInstructionsAlone) {
   const auto end = module.begin_compute({{scratch, Access::ComputeWrite}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch(count, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   auto compiled = compile(module, end);
   const auto before = compiled.dump();
   compiled.set(count, 9_u32);

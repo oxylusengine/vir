@@ -41,12 +41,12 @@ TEST(RenderGraphExtensions, DisjointLayersKeepIndependentStates) {
   const auto written = module.begin_compute({{first, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto second = module.view(written, Subresource::layer(2));
   const auto end = module.begin_compute({{second, Access::ComputeRead}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   const auto barriers = image_barriers(module, compiled);
   ASSERT_EQ(barriers.size(), 2u) << compiled.dump();
@@ -69,12 +69,12 @@ TEST(RenderGraphExtensions, OverlappingMipLayerViewsWaitOnlyOnTheirIntersection)
   const auto written = module.begin_compute({{first, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto second = module.view(written, {.base_level = 2, .level_count = 2, .base_layer = 1, .layer_count = 1});
   const auto end = module.begin_compute({{second, Access::ComputeRead}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   const auto barriers = image_barriers(module, compiled);
   auto waited = false;
@@ -108,7 +108,7 @@ TEST(RenderGraphExtensions, WholeImageExportRestoresEveryMipAndLayerAfterPartial
   const auto written = module.begin_compute({{range, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<1>()[0];
+                         .end_compute()[0];
   const auto end = module.export_to(module.whole(written), Access::FragmentSampled);
   const auto compiled = compile(module, end);
   const auto barriers = image_barriers(module, compiled);
@@ -148,7 +148,7 @@ TEST(RenderGraphExtensions, ExplicitImageViewFormatsResolvePerBindingButShareSyn
                      .bind_image(0, 0, floating)
                      .bind_image(0, 1, integer)
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<1>()[0];
+                     .end_compute()[0];
   const auto declared = Declared::with_access(
     {{0, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE}, {0, 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE}},
     vir::ShaderStage::Compute,
@@ -268,7 +268,7 @@ TEST(RenderGraphExtensions, MeshIndirectCountDrawsWaitOnCommandsAndCounts) {
   const auto end = module.begin_rendering({{target, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(2))
                      .draw_mesh_tasks_indirect_count(commands, 32, counts, 8, 7_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::DrawMeshTasksIndirect>(compiled);
   ASSERT_EQ(draws.size(), 1u);
@@ -354,7 +354,7 @@ TEST(RenderGraphExtensions, RasterizationStencilAndTessellationStateReachThePipe
                      .set_rasterization(rasterization)
                      .set_stencil(stencil)
                      .draw(4_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto draws = find_all<ir::Draw>(compiled);
   ASSERT_EQ(draws.size(), 1u);
@@ -379,7 +379,7 @@ TEST(RenderGraphExtensions, MultipleVertexBuffersInferUsageAndShareTheirHostBarr
                      .bind_graphics_pipeline(pipeline(0))
                      .bind_vertex_buffers(0, buffers, offsets)
                      .draw(3_u32, 4_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   EXPECT_EQ(find_all<ir::BindVertexBuffers>(compiled).size(), 1u);
   EXPECT_EQ(buffer_usage(compiled, vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);

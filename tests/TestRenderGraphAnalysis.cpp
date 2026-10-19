@@ -18,7 +18,7 @@ TEST(RenderGraphAnalysis, DescriptorKindsMustMatchTheReflectedType) {
                        .bind_graphics_pipeline(pipeline(0))
                        .bind_image(0, 0, image)
                        .draw(3_u32, 1_u32)
-                       .end_rendering<1>()[0];
+                       .end_rendering()[0];
     const auto access = type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE      ? Access::FragmentRW
                         : type == VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT ? Access::InputAttachmentRead
                                                                       : Access::FragmentSampled;
@@ -75,7 +75,7 @@ TEST(RenderGraphAnalysis, UncheckedBindingsDoNotPermitUnreflectedDescriptors) {
                      .bind_graphics_pipeline(pipeline(0))
                      .bind_image(0, 0, target)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   EXPECT_FALSE(module.compile(PipelineBindings::unchecked(), end).has_value());
 }
 
@@ -87,11 +87,11 @@ TEST(RenderGraphAnalysis, DescriptorWritesDoNotCarryIntoTheNextRegion) {
                        .bind_graphics_pipeline(pipeline(0))
                        .bind_image(0, 0, image)
                        .draw(3_u32, 1_u32)
-                       .end_rendering<1>()[0];
+                       .end_rendering()[0];
   const auto end = module.begin_rendering({{first, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto declared = Declared::fragment({{0, 0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE}});
   EXPECT_FALSE(module.compile(declared.pipelines(), end).has_value());
 }
@@ -123,7 +123,7 @@ TEST(RenderGraphAnalysis, BufferDescriptorsInferUsageAndWaitBeforeDispatch) {
                        .bind_compute_pipeline(pipeline(0))
                        .bind_buffer_range(0, 0, buffer, 16, 32)
                        .dispatch(1_u32, 1_u32, 1_u32)
-                       .end_compute<1>()[0];
+                       .end_compute()[0];
     const auto declared = Declared::with_access({{0, 0, type}}, vir::ShaderStage::Compute, access);
     const auto compiled = module.compile(declared.pipelines(), end);
     ASSERT_TRUE(compiled.has_value());
@@ -150,7 +150,7 @@ TEST(RenderGraphAnalysis, SamplingTheSameImageTwiceDoesNotDuplicateItsBarrier) {
                      .bind_image(0, 0, image)
                      .bind_image(0, 1, image)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto declared = Declared::fragment(
     {{0, 0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE}, {0, 1, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE}}
   );

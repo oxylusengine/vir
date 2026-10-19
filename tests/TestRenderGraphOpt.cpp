@@ -6,7 +6,7 @@ static auto draw_into(Module& module, ValueID target) -> ValueID {
   return module.begin_rendering({{target, Access::ColorRW}})
     .bind_graphics_pipeline(pipeline(0))
     .draw(3_u32, 1_u32)
-    .end_rendering<1>()[0];
+    .end_rendering()[0];
 }
 
 template <typename T>
@@ -35,7 +35,7 @@ TEST(RenderGraphOpt, UnrelatedClearsGatherTheirBarriersBeforeTheFirstClear) {
                      )
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<4>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto clears = positions<ir::Clear>(compiled);
   const auto barriers = positions<ir::ImageBarrier>(compiled);
@@ -57,7 +57,7 @@ TEST(RenderGraphOpt, ABarrierDoesNotClimbAboveAPass) {
   const auto end = module.begin_rendering({{second, Access::ColorRW}, {drawn, Access::ColorRW}})
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<2>()[1];
+                     .end_rendering()[1];
   const auto compiled = compile(module, end);
   const auto first_end = position_of<ir::EndRendering>(compiled);
   auto found = false;
@@ -82,7 +82,7 @@ TEST(RenderGraphOpt, AMemoryBarrierDoesNotClimbAboveAnUnrelatedBufferUse) {
                      .bind_graphics_pipeline(pipeline(0))
                      .bind_vertex_buffer(0, vertices)
                      .draw(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   const auto waits = positions<ir::MemoryBarrier>(compiled);
   ASSERT_EQ(waits.size(), 2u) << compiled.dump();
@@ -124,7 +124,7 @@ TEST(RenderGraphOpt, FoldedDepthClearStillWaitsOnThePreviousWriter) {
   const auto end = module.begin_rendering({{color, Access::ColorRW}, {cleared, Access::DepthStencilRW}})
                      .bind_graphics_pipeline(pipeline(0))
                      .draw(3_u32, 1_u32)
-                     .end_rendering<2>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   EXPECT_TRUE(find_all<ir::Clear>(compiled).empty());
   const auto barriers = image_barriers(module, compiled);
@@ -187,7 +187,7 @@ TEST(RenderGraphOpt, ClearsCoveringMoreThanThePassPreservesItsTransfer) {
                        )
                        .bind_graphics_pipeline(pipeline(0))
                        .draw(3_u32, 1_u32)
-                       .end_rendering<1>()[0];
+                       .end_rendering()[0];
     const auto compiled = compile(module, end);
     EXPECT_EQ(find_all<ir::Clear>(compiled).size(), 1u) << compiled.dump();
     EXPECT_TRUE(find_all<ir::BeginRendering>(compiled)[0]->clears.empty());
@@ -285,7 +285,7 @@ TEST(RenderGraphOpt, BarriersSharingASourceMergeTheirDestinations) {
                      .bind_vertex_buffer(0, vertices)
                      .bind_index_buffer(indices, VK_INDEX_TYPE_UINT32)
                      .draw_indexed(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   EXPECT_EQ(
     memory_barriers(module, compiled),
@@ -300,15 +300,15 @@ TEST(RenderGraphOpt, BarriersWithAPassBetweenThemStaySeparate) {
   const auto written = module.begin_compute({{first, Access::ComputeWrite}, {second, Access::ComputeWrite}})
                          .bind_compute_pipeline(pipeline(0))
                          .dispatch(1_u32, 1_u32, 1_u32)
-                         .end_compute<2>();
+                         .end_compute();
   const auto read = module.begin_compute({{written[0], Access::ComputeRead}})
                       .bind_compute_pipeline(pipeline(0))
                       .dispatch(1_u32, 1_u32, 1_u32)
-                      .end_compute<1>()[0];
+                      .end_compute()[0];
   const auto end = module.begin_compute({{written[1], Access::ComputeRead}, {read, Access::ComputeRead}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<2>()[0];
+                     .end_compute()[0];
   const auto compiled = compile(module, end);
   EXPECT_EQ(memory_barriers(module, compiled).size(), 2u) << compiled.dump();
 }
@@ -323,7 +323,7 @@ TEST(RenderGraphOpt, BarriersWithDifferentSourcesAndDestinationsMergeBothMasks) 
                      .bind_vertex_buffer(0, vertices)
                      .bind_index_buffer(indices, VK_INDEX_TYPE_UINT32)
                      .draw_indexed(3_u32, 1_u32)
-                     .end_rendering<1>()[0];
+                     .end_rendering()[0];
   const auto compiled = compile(module, end);
   EXPECT_EQ(
     memory_barriers(module, compiled),
@@ -342,7 +342,7 @@ TEST(RenderGraphOpt, DisjointMipsHaveConsecutiveImageBarriers) {
   const auto end = module.begin_compute({{source, Access::ComputeSampled}, {target, Access::ComputeWrite}})
                      .bind_compute_pipeline(pipeline(0))
                      .dispatch(1_u32, 1_u32, 1_u32)
-                     .end_compute<2>()[1];
+                     .end_compute()[1];
   const auto compiled = compile(module, end);
   const auto barriers = find_all<ir::ImageBarrier>(compiled);
   ASSERT_EQ(barriers.size(), 2u) << compiled.dump();

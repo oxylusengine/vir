@@ -45,6 +45,335 @@ constexpr u32 DRAW_MESH_TASKS_INDIRECT_STRIDE = sizeof(VkDrawMeshTasksIndirectCo
 
 enum class PassKind : u8 { Rendering, Compute };
 
+struct Module;
+
+struct PassCommands {
+  Module* module = nullptr;
+
+  auto with_name(this auto self, std::string_view name) -> decltype(self) {
+    self.module->with_name(name);
+    return self;
+  }
+
+  auto push_constant_bytes(this auto self, u32 offset, std::span<const u8> data) -> decltype(self) {
+    self.module->push_constant_bytes(offset, data);
+    return self;
+  }
+
+  template <typename T>
+  auto push_constants(this auto self, const T& value) -> decltype(self) {
+    self.module->push_constants(value);
+    return self;
+  }
+
+  template <typename T>
+  auto push_constants_at(this auto self, u32 offset, const T& value) -> decltype(self) {
+    self.module->push_constants_at(offset, value);
+    return self;
+  }
+
+  auto push_constants_from(this auto self, ValueID variable) -> decltype(self) {
+    self.module->push_constants_from(variable);
+    return self;
+  }
+
+  auto push_constants_from_at(this auto self, u32 offset, ValueID variable) -> decltype(self) {
+    self.module->push_constants_from_at(offset, variable);
+    return self;
+  }
+
+  auto push_constant_address(this auto self, u32 offset, ValueID buffer) -> decltype(self) {
+    self.module->push_constant_address(offset, buffer);
+    return self;
+  }
+
+  auto specialize(this auto self, u32 id, SpecValue value) -> decltype(self) {
+    self.module->specialize(id, value);
+    return self;
+  }
+
+  template <typename T>
+  auto specialize_constant(this auto self, u32 id, T value) -> decltype(self) {
+    self.module->specialize_constant(id, value);
+    return self;
+  }
+
+  auto bind_graphics_pipeline(this auto self, PipelineID pipeline) -> decltype(self) {
+    self.module->bind_graphics_pipeline(pipeline);
+    return self;
+  }
+
+  auto bind_compute_pipeline(this auto self, PipelineID pipeline) -> decltype(self) {
+    self.module->bind_compute_pipeline(pipeline);
+    return self;
+  }
+
+  auto bind_ray_tracing_pipeline(this auto self, PipelineID pipeline) -> decltype(self) {
+    self.module->bind_ray_tracing_pipeline(pipeline);
+    return self;
+  }
+
+  auto bind_image(this auto self, u32 set, u32 binding, ValueID image) -> decltype(self) {
+    self.module->bind_image(set, binding, image);
+    return self;
+  }
+
+  auto bind_image(this auto self, u32 set, u32 binding, ValueID image, Format view_format) -> decltype(self) {
+    self.module->bind_image(set, binding, image, view_format);
+    return self;
+  }
+
+  auto bind_texture(this auto self, u32 set, u32 binding, ValueID image, VkSampler sampler) -> decltype(self) {
+    self.module->bind_texture(set, binding, image, sampler);
+    return self;
+  }
+
+  auto bind_sampler(this auto self, u32 set, u32 binding, VkSampler sampler) -> decltype(self) {
+    self.module->bind_sampler(set, binding, sampler);
+    return self;
+  }
+
+  auto bind_buffer(this auto self, u32 set, u32 binding, ValueID buffer) -> decltype(self) {
+    self.module->bind_buffer(set, binding, buffer);
+    return self;
+  }
+
+  auto bind_buffer_range(this auto self, u32 set, u32 binding, ValueID buffer, u64 offset, u64 range)
+    -> decltype(self) {
+    self.module->bind_buffer_range(set, binding, buffer, offset, range);
+    return self;
+  }
+
+  auto bind_texel_buffer(this auto self, u32 set, u32 binding, ValueID buffer, VkBufferView view) -> decltype(self) {
+    self.module->bind_texel_buffer(set, binding, buffer, view);
+    return self;
+  }
+
+  auto bind_acceleration_structure(
+    this auto self, u32 set, u32 binding, ValueID backing_buffer, VkAccelerationStructureKHR acceleration_structure
+  ) -> decltype(self) {
+    self.module->bind_acceleration_structure(set, binding, backing_buffer, acceleration_structure);
+    return self;
+  }
+
+  auto bind_vertex_buffer(this auto self, u32 binding, ValueID buffer, u64 offset = 0) -> decltype(self) {
+    self.module->bind_vertex_buffer(binding, buffer, offset);
+    return self;
+  }
+
+  auto bind_vertex_buffers(
+    this auto self, u32 first_binding, std::span<const ValueID> buffers, std::span<const u64> offsets
+  ) -> decltype(self) {
+    self.module->bind_vertex_buffers(first_binding, buffers, offsets);
+    return self;
+  }
+
+  auto bind_index_buffer(this auto self, ValueID buffer, VkIndexType index_type, u64 offset = 0) -> decltype(self) {
+    self.module->bind_index_buffer(buffer, index_type, offset);
+    return self;
+  }
+
+  auto set_primitive_topology(this auto self, VkPrimitiveTopology topology) -> decltype(self) {
+    self.module->set_primitive_topology(topology);
+    return self;
+  }
+
+  auto set_patch_control_points(this auto self, u32 count) -> decltype(self) {
+    self.module->set_patch_control_points(count);
+    return self;
+  }
+
+  auto set_depth(this auto self, const DepthState& depth) -> decltype(self) {
+    self.module->set_depth(depth);
+    return self;
+  }
+
+  auto set_stencil(this auto self, const StencilState& stencil) -> decltype(self) {
+    self.module->set_stencil(stencil);
+    return self;
+  }
+
+  auto set_rasterization(this auto self, const RasterizationState& rasterization) -> decltype(self) {
+    self.module->set_rasterization(rasterization);
+    return self;
+  }
+
+  auto set_dynamic_state(this auto self, DynamicStateFlags dynamic) -> decltype(self) {
+    self.module->set_dynamic_state(dynamic);
+    return self;
+  }
+
+  auto set_viewport(this auto self, u32 index, const Viewport& viewport) -> decltype(self) {
+    self.module->set_viewport(index, viewport);
+    return self;
+  }
+
+  auto set_viewport(this auto self, u32 index, const Rect2D& rect) -> decltype(self) {
+    self.module->set_viewport(index, rect);
+    return self;
+  }
+
+  auto set_scissor(this auto self, u32 index, const Rect2D& rect) -> decltype(self) {
+    self.module->set_scissor(index, rect);
+    return self;
+  }
+
+  auto set_color_blend(this auto self, u32 index, const ColorBlendAttachmentState& blend) -> decltype(self) {
+    self.module->set_color_blend(index, blend);
+    return self;
+  }
+
+  auto set_color_blend(this auto self, u32 index, BlendPreset preset) -> decltype(self) {
+    self.module->set_color_blend(index, preset);
+    return self;
+  }
+
+  auto broadcast_color_blend(this auto self, const ColorBlendAttachmentState& blend) -> decltype(self) {
+    self.module->broadcast_color_blend(blend);
+    return self;
+  }
+
+  auto broadcast_color_blend(this auto self, BlendPreset preset) -> decltype(self) {
+    self.module->broadcast_color_blend(preset);
+    return self;
+  }
+
+  auto draw(this auto self, Count vertex_count, Count instance_count) -> decltype(self) {
+    self.module->draw(vertex_count, instance_count);
+    return self;
+  }
+
+  auto draw_range(this auto self, Count vertex_count, Count instance_count, Count first_vertex, Count first_instance)
+    -> decltype(self) {
+    self.module->draw_range(vertex_count, instance_count, first_vertex, first_instance);
+    return self;
+  }
+
+  auto draw_indexed(this auto self, Count index_count, Count instance_count) -> decltype(self) {
+    self.module->draw_indexed(index_count, instance_count);
+    return self;
+  }
+
+  auto draw_indexed_range(
+    this auto self, Count index_count, Count instance_count, Count first_index, i32 vertex_offset, Count first_instance
+  ) -> decltype(self) {
+    self.module->draw_indexed_range(index_count, instance_count, first_index, vertex_offset, first_instance);
+    return self;
+  }
+
+  auto draw_indirect(
+    this auto self, ValueID buffer, Count draw_count, u64 offset = 0, u32 stride = DRAW_INDIRECT_STRIDE
+  ) -> decltype(self) {
+    self.module->draw_indirect(buffer, draw_count, offset, stride);
+    return self;
+  }
+
+  auto draw_indexed_indirect(
+    this auto self, ValueID buffer, Count draw_count, u64 offset = 0, u32 stride = DRAW_INDEXED_INDIRECT_STRIDE
+  ) -> decltype(self) {
+    self.module->draw_indexed_indirect(buffer, draw_count, offset, stride);
+    return self;
+  }
+
+  auto draw_indirect_count(
+    this auto self,
+    ValueID buffer,
+    u64 offset,
+    ValueID count_buffer,
+    u64 count_offset,
+    Count max_draw_count,
+    u32 stride = DRAW_INDIRECT_STRIDE
+  ) -> decltype(self) {
+    self.module->draw_indirect_count(buffer, offset, count_buffer, count_offset, max_draw_count, stride);
+    return self;
+  }
+
+  auto draw_indexed_indirect_count(
+    this auto self,
+    ValueID buffer,
+    u64 offset,
+    ValueID count_buffer,
+    u64 count_offset,
+    Count max_draw_count,
+    u32 stride = DRAW_INDEXED_INDIRECT_STRIDE
+  ) -> decltype(self) {
+    self.module->draw_indexed_indirect_count(buffer, offset, count_buffer, count_offset, max_draw_count, stride);
+    return self;
+  }
+
+  auto draw_mesh_tasks(this auto self, Count x, Count y, Count z) -> decltype(self) {
+    self.module->draw_mesh_tasks(x, y, z);
+    return self;
+  }
+
+  auto draw_mesh_tasks_indirect(
+    this auto self, ValueID buffer, Count draw_count, u64 offset = 0, u32 stride = DRAW_MESH_TASKS_INDIRECT_STRIDE
+  ) -> decltype(self) {
+    self.module->draw_mesh_tasks_indirect(buffer, draw_count, offset, stride);
+    return self;
+  }
+
+  auto draw_mesh_tasks_indirect_count(
+    this auto self,
+    ValueID buffer,
+    u64 offset,
+    ValueID count_buffer,
+    u64 count_offset,
+    Count max_draw_count,
+    u32 stride = DRAW_MESH_TASKS_INDIRECT_STRIDE
+  ) -> decltype(self) {
+    self.module->draw_mesh_tasks_indirect_count(buffer, offset, count_buffer, count_offset, max_draw_count, stride);
+    return self;
+  }
+
+  auto record_from(this auto self, ValueID body) -> decltype(self) {
+    self.module->record_from(body);
+    return self;
+  }
+
+  auto dispatch(this auto self, Count groups_x, Count groups_y, Count groups_z) -> decltype(self) {
+    self.module->dispatch(groups_x, groups_y, groups_z);
+    return self;
+  }
+
+  auto dispatch_invocations(this auto self, Count x, Count y, Count z) -> decltype(self) {
+    self.module->dispatch_invocations(x, y, z);
+    return self;
+  }
+
+  auto dispatch_invocations_per_pixel(this auto self, ValueID image, std::array<f32, 3> scale = {1.0f, 1.0f, 1.0f})
+    -> decltype(self) {
+    self.module->dispatch_invocations_per_pixel(image, scale);
+    return self;
+  }
+
+  auto dispatch_invocations_per_element(this auto self, ValueID buffer, u64 element_size, f32 scale = 1.0f)
+    -> decltype(self) {
+    self.module->dispatch_invocations_per_element(buffer, element_size, scale);
+    return self;
+  }
+
+  auto dispatch_indirect(this auto self, ValueID buffer, u64 offset = 0) -> decltype(self) {
+    self.module->dispatch_indirect(buffer, offset);
+    return self;
+  }
+
+  auto trace_rays(this auto self, Count width, Count height, Count depth) -> decltype(self) {
+    self.module->trace_rays(width, height, depth);
+    return self;
+  }
+};
+
+template <usize N>
+struct RenderingPass : PassCommands {
+  auto end_rendering(this RenderingPass self) -> std::array<ValueID, N>;
+};
+
+template <usize N>
+struct ComputePass : PassCommands {
+  auto end_compute(this ComputePass self) -> std::array<ValueID, N>;
+};
+
 struct Module {
   enum class TerminatorKind : u8 { Return, Branch, BranchConditional };
 
@@ -177,7 +506,16 @@ struct Module {
 
   // passes, which take every resource they touch with how, and give back a fresh value of each
   auto begin_rendering(this Module& self, std::span<const ResourceAccess> attachments) -> Module&;
-  auto begin_rendering(this Module& self, std::initializer_list<ResourceAccess> attachments) -> Module&;
+  template <usize N>
+  auto begin_rendering(this Module& self, const ResourceAccess (&attachments)[N]) -> RenderingPass<N> {
+    self.begin_rendering(std::span<const ResourceAccess>(attachments, N));
+    return {{&self}};
+  }
+  template <usize N>
+  auto begin_rendering(this Module& self, const std::array<ResourceAccess, N>& attachments) -> RenderingPass<N> {
+    self.begin_rendering(std::span<const ResourceAccess>(attachments));
+    return {{&self}};
+  }
   auto begin_rendering_area(
     this Module& self,
     std::span<const ResourceAccess> attachments,
@@ -185,15 +523,39 @@ struct Module {
     u32 layer_count = 1,
     u32 view_mask = 0
   ) -> Module&;
+  template <usize N>
   auto begin_rendering_area(
     this Module& self,
-    std::initializer_list<ResourceAccess> attachments,
+    const ResourceAccess (&attachments)[N],
     Extent2D render_area,
     u32 layer_count = 1,
     u32 view_mask = 0
-  ) -> Module&;
+  ) -> RenderingPass<N> {
+    self.begin_rendering_area(std::span<const ResourceAccess>(attachments, N), render_area, layer_count, view_mask);
+    return {{&self}};
+  }
+  template <usize N>
+  auto begin_rendering_area(
+    this Module& self,
+    const std::array<ResourceAccess, N>& attachments,
+    Extent2D render_area,
+    u32 layer_count = 1,
+    u32 view_mask = 0
+  ) -> RenderingPass<N> {
+    self.begin_rendering_area(std::span<const ResourceAccess>(attachments), render_area, layer_count, view_mask);
+    return {{&self}};
+  }
   auto begin_compute(this Module& self, std::span<const ResourceAccess> attachments) -> Module&;
-  auto begin_compute(this Module& self, std::initializer_list<ResourceAccess> attachments) -> Module&;
+  template <usize N>
+  auto begin_compute(this Module& self, const ResourceAccess (&attachments)[N]) -> ComputePass<N> {
+    self.begin_compute(std::span<const ResourceAccess>(attachments, N));
+    return {{&self}};
+  }
+  template <usize N>
+  auto begin_compute(this Module& self, const std::array<ResourceAccess, N>& attachments) -> ComputePass<N> {
+    self.begin_compute(std::span<const ResourceAccess>(attachments));
+    return {{&self}};
+  }
   auto with_name(this Module& self, std::string_view name) -> Module&;
 
   auto push_constant_bytes(this Module& self, u32 offset, std::span<const u8> data) -> Module&;
@@ -414,6 +776,16 @@ struct Module {
   auto schedule_barriers(this const Module& self, std::vector<Instr> nodes) -> std::vector<Instr>;
   auto infer_usage(this const Module& self, std::vector<Instr>& nodes) -> void;
 };
+
+template <usize N>
+auto RenderingPass<N>::end_rendering(this RenderingPass self) -> std::array<ValueID, N> {
+  return self.module->template end_rendering<N>();
+}
+
+template <usize N>
+auto ComputePass<N>::end_compute(this ComputePass self) -> std::array<ValueID, N> {
+  return self.module->template end_compute<N>();
+}
 
 auto resolve_descriptors(std::vector<Instr> nodes, const PipelineBindings& pipelines, u32& next_id)
   -> std::expected<std::vector<Instr>, VkResult>;
